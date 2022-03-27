@@ -47,9 +47,11 @@ private:
     const bool isServer_;
     const QHostAddress serverAddress_;
     const quint16 serverPort_;
+    const quint16 clientPort_;
     HashResult doHash(std::string_view data);
 
-    QUdpSocket *socket{nullptr};
+    QUdpSocket *socketRx{nullptr};
+    QUdpSocket *socketTx{nullptr};
     QTimer *timer{nullptr};
 
     TesterInfo info_;

@@ -8,17 +8,19 @@ Tester::Tester(QObject *parent, const QString& serverAddress, quint16 serverPort
     , isServer_(serverAddress.isEmpty())
     , serverAddress_(serverAddress)
     , serverPort_(serverPort)
+    , clientPort_(clientPort)
     , txBuffer_(payloadBytes, ' ')
     , rxBuffer_(payloadBytes * 2, ' ')
     , randomGen_(randomDev_())
     , randomDist_(std::numeric_limits<char>::min(), std::numeric_limits<char>::max())
 {
     qDebug() << "Create socket";
-    socket = new QUdpSocket(this);
+    socketTx = new QUdpSocket(this);
+    socketRx = new QUdpSocket(this);
     quint16 port = (isServer_)? serverPort : clientPort;
     qDebug() << "Bind to port " << port;
-    socket->bind(QHostAddress::LocalHost, port);
-    connect(socket, &QUdpSocket::readyRead, this, &Tester::socketRxAvailable);
+    socketRx->bind(port);
+    connect(socketRx, &QUdpSocket::readyRead, this, &Tester::socketRxAvailable);
 
     if (!isServer_)
     {
@@ -51,7 +53,7 @@ void Tester::timerTicked()
     hashLookup_.emplace(packetInfo.hash, packetInfo);
 
     // Send packet
-    socket->writeDatagram(txBuffer_.data(), txBuffer_.size(), serverAddress_, serverPort_);
+    socketTx->writeDatagram(txBuffer_.data(), txBuffer_.size(), serverAddress_, serverPort_);
     {
         std::lock_guard<std::mutex> lock(mutexInfo_);
         if (info_.allPackets == 0)
@@ -92,11 +94,11 @@ void Tester::timerTicked()
 
 void Tester::socketRxAvailable()
 {
-    while (socket->hasPendingDatagrams())
+    while (socketRx->hasPendingDatagrams())
     {
         QHostAddress address;
         quint16 port = 0;
-        auto numBytes = socket->readDatagram(rxBuffer_.data(), rxBuffer_.size(), &address, &port);
+        auto numBytes = socketRx->readDatagram(rxBuffer_.data(), rxBuffer_.size(), &address, &port);
         //qDebug() << "Receive " << numBytes << " bytes from " << address << ":" << port;
         if (numBytes == 0)
         {
@@ -107,7 +109,7 @@ void Tester::socketRxAvailable()
         if (isServer_)
         {
             // Loopback
-            socket->writeDatagram(rxBuffer_.data(), numBytes, address, port);
+            socketTx->writeDatagram(rxBuffer_.data(), numBytes, address, clientPort_);
 
             std::lock_guard<std::mutex> lock(mutexInfo_);
             if (info_.allPackets == 0)
