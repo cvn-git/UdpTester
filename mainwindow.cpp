@@ -2,6 +2,8 @@
 
 #include <QGridLayout>
 #include <QLabel>
+#include <QToolBar>
+#include <QStatusBar>
 #include <QDebug>
 
 
@@ -20,13 +22,20 @@ void addListItem(QGridLayout* layout, const QString& label, QWidget* widget)
 }   // anonymous namespace
 
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    // Main widget
     auto mainWidget = new QWidget(this);
     auto mainLayout = new QGridLayout(mainWidget);
     setCentralWidget(mainWidget);
+
+    // Status bar
+    auto toolbar = new QToolBar();
+    addToolBar(Qt::BottomToolBarArea, toolbar);
+    auto statusbar = new QStatusBar();
+    statusbar->showMessage(QString(tr("Version 0.1, " __TIME__ " " __DATE__)));
+    toolbar->addWidget(statusbar);
 
     // Config group
     groupConfig = new QGroupBox(tr("Config"));
@@ -48,12 +57,13 @@ MainWindow::MainWindow(QWidget *parent)
     addListItem(layoutConfig, tr("Client port:"), editClientPort);
 
     editPayloadBytes = new QLineEdit(tr("64"));
-    addListItem(layoutConfig, tr("Paylod bytes:"), editPayloadBytes);
+    addListItem(layoutConfig, tr("Payload bytes:"), editPayloadBytes);
 
     editBlockRate = new QLineEdit(tr("500"));
     addListItem(layoutConfig, tr("Block rate:"), editBlockRate);
 
     buttonOpen = new QPushButton(tr("Close"));
+    buttonOpen->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     connect(buttonOpen, &QPushButton::clicked, this, &MainWindow::onButtonOpenClicked);
     mainLayout->addWidget(buttonOpen, 0, 1);
 
@@ -89,6 +99,11 @@ MainWindow::MainWindow(QWidget *parent)
     editAvgBlockRate = new QLineEdit(tr("0"));
     editAvgBlockRate->setReadOnly(true);
     addListItem(layoutTest, tr("Average block rate:"), editAvgBlockRate);
+
+    // Padding
+    auto widgetPadding = new QWidget();
+    widgetPadding->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    mainLayout->addWidget(widgetPadding, 2, 0, 1, 2);
 
     auto statusTimer = new QTimer(this);
     connect(statusTimer, &QTimer::timeout, this, &MainWindow::statusTimerTicked);

@@ -50,8 +50,7 @@ private:
     const quint16 clientPort_;
     HashResult doHash(std::string_view data);
 
-    QUdpSocket *socketRx{nullptr};
-    QUdpSocket *socketTx{nullptr};
+    QUdpSocket *socket{nullptr};
     QTimer *timer{nullptr};
 
     TesterInfo info_;
